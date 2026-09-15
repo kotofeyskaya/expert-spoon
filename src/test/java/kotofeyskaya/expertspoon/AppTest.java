@@ -14,14 +14,7 @@ import org.junit.jupiter.api.Test;
 public class AppTest {
 
     private static final String EXPECTED_OUTPUT = "Hello World!" + System.lineSeparator();
-
-    /**
-     * Rigorous Test :-)
-     */
-    @Test
-    public void shouldAnswerWithTrue() {
-        assertTrue(true);
-    }
+    private static final Object STDOUT_LOCK = new Object();
 
     @Test
     public void mainPrintsHelloWorldWithNoArgs() {
@@ -65,20 +58,27 @@ public class AppTest {
     }
 
     @Test
+    public void mainOutputHasExpectedLength() {
+        assertEquals(EXPECTED_OUTPUT.length(), runAppAndCaptureOutput(new String[0]).length());
+    }
+
+    @Test
     public void mainDoesNotThrow() {
         assertDoesNotThrow(() -> runAppAndCaptureOutput(new String[0]));
     }
 
     private String runAppAndCaptureOutput(String[] args) {
-        ByteArrayOutputStream output = new ByteArrayOutputStream();
-        PrintStream originalOut = System.out;
+        synchronized (STDOUT_LOCK) {
+            ByteArrayOutputStream output = new ByteArrayOutputStream();
+            PrintStream originalOut = System.out;
 
-        try {
-            System.setOut(new PrintStream(output));
-            App.main(args);
-        } finally {
-            System.setOut(originalOut);
+            try {
+                System.setOut(new PrintStream(output));
+                App.main(args);
+            } finally {
+                System.setOut(originalOut);
+            }
+            return output.toString();
         }
-        return output.toString();
     }
 }
