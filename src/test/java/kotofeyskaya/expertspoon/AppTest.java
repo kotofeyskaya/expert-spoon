@@ -2,7 +2,9 @@ package kotofeyskaya.expertspoon;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -43,42 +45,71 @@ public class AppTest {
     }
 
     @Test
-    public void mainOutputStartsWithHello() {
-        assertTrue(runAppAndCaptureOutput(new String[0]).startsWith("Hello"));
+    public void mainAcceptsArrayContainingNullElement() {
+        assertEquals(EXPECTED_OUTPUT, runAppAndCaptureOutput(new String[] {"first", null, "third"}));
     }
 
     @Test
-    public void mainOutputEndsWithLineSeparator() {
-        assertTrue(runAppAndCaptureOutput(new String[0]).endsWith(System.lineSeparator()));
+    public void mainHandlesLargeArgumentArray() {
+        String[] args = new String[100];
+        for (int i = 0; i < args.length; i++) {
+            args[i] = "arg-" + i;
+        }
+        assertEquals(EXPECTED_OUTPUT, runAppAndCaptureOutput(args));
     }
 
     @Test
-    public void mainOutputContainsWorld() {
-        assertTrue(runAppAndCaptureOutput(new String[0]).contains("World"));
+    public void mainDoesNotMutateProvidedArguments() {
+        String[] args = new String[] {"alpha", "beta"};
+        String[] original = args.clone();
+
+        runAppAndCaptureOutput(args);
+
+        assertArrayEquals(original, args);
     }
 
     @Test
-    public void mainOutputHasExpectedLength() {
-        assertEquals(EXPECTED_OUTPUT.length(), runAppAndCaptureOutput(new String[0]).length());
-    }
-
-    @Test
-    public void mainDoesNotThrow() {
-        assertDoesNotThrow(() -> runAppAndCaptureOutput(new String[0]));
-    }
-
-    private String runAppAndCaptureOutput(String[] args) {
+    public void mainDoesNotReplaceSystemOut() {
         synchronized (STDOUT_LOCK) {
-            ByteArrayOutputStream output = new ByteArrayOutputStream();
+            ByteArrayOutputStream stdout = new ByteArrayOutputStream();
             PrintStream originalOut = System.out;
+            PrintStream captureOut = new PrintStream(stdout);
 
             try {
-                System.setOut(new PrintStream(output));
-                App.main(args);
+                System.setOut(captureOut);
+                App.main(new String[0]);
+                assertSame(captureOut, System.out);
             } finally {
                 System.setOut(originalOut);
             }
-            return output.toString();
+        }
+    }
+
+    @Test
+    public void mainDoesNotWriteToSystemErr() {
+        assertTrue(runAppAndCaptureStreams(new String[0])[1].isEmpty());
+    }
+
+    private String runAppAndCaptureOutput(String[] args) {
+        return runAppAndCaptureStreams(args)[0];
+    }
+
+    private String[] runAppAndCaptureStreams(String[] args) {
+        synchronized (STDOUT_LOCK) {
+            ByteArrayOutputStream stdout = new ByteArrayOutputStream();
+            ByteArrayOutputStream stderr = new ByteArrayOutputStream();
+            PrintStream originalOut = System.out;
+            PrintStream originalErr = System.err;
+
+            try {
+                System.setOut(new PrintStream(stdout));
+                System.setErr(new PrintStream(stderr));
+                assertDoesNotThrow(() -> App.main(args));
+            } finally {
+                System.setOut(originalOut);
+                System.setErr(originalErr);
+            }
+            return new String[] {stdout.toString(), stderr.toString()};
         }
     }
 }
