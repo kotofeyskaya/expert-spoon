@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -109,7 +110,10 @@ public class AppTest {
                 System.setOut(originalOut);
                 System.setErr(originalErr);
             }
-            return new String[] {stdout.toString(), stderr.toString()};
+            return new String[] {
+                stdout.toString(StandardCharsets.UTF_8),
+                stderr.toString(StandardCharsets.UTF_8)
+            };
         }
     }
 }
