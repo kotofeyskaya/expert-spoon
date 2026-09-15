@@ -1,0 +1,13 @@
+jobs:
+  Job1:
+    name: Build
+    steps:
+      - type: maven
+        goals: clean package
+  Job2:
+    name: Test
+    steps:
+      - type: maven
+        script-content: test
+    dependencies:
+      - Job1
