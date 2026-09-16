@@ -8,6 +8,6 @@ jobs:
     name: Test
     steps:
       - type: maven
-        script-content: test
+        goals: test
     dependencies:
       - Job1
